@@ -13,7 +13,6 @@ if (!process.env.DATABASE_URL) {
 let sequelize;
 
 if (process.env.DATABASE_URL) {
-  // ✅ Railway (Production)
   sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: "postgres",
     protocol: "postgres",
@@ -26,7 +25,6 @@ if (process.env.DATABASE_URL) {
   });
   console.log("✅ Using Railway DATABASE_URL");
 } else {
-  // ✅ Lokal (Docker/Dev)
   sequelize = new Sequelize(
     config.database,
     config.username,
@@ -36,14 +34,27 @@ if (process.env.DATABASE_URL) {
   console.log("✅ Using local config/config.json");
 }
 
+// 🔥 FIX untuk support class-based dan function-based model
 fs.readdirSync(__dirname)
   .filter(
     (file) =>
       file.indexOf(".") !== 0 && file !== basename && file.slice(-3) === ".js"
   )
   .forEach((file) => {
-    const modelFactory = require(path.join(__dirname, file));
-    const model = modelFactory(sequelize, Sequelize.DataTypes);
+    const modelFile = require(path.join(__dirname, file));
+
+    let model;
+    if (typeof modelFile === "function") {
+      // model gaya lama: module.exports = (sequelize, DataTypes) => {...}
+      model = modelFile(sequelize, Sequelize.DataTypes);
+    } else {
+      // model gaya baru: module.exports = class User extends Model {...}
+      model = modelFile;
+      if (model.init) {
+        model.init(model.fields || {}, { sequelize, modelName: model.name });
+      }
+    }
+
     db[model.name] = model;
   });
 
