@@ -5,24 +5,28 @@ const basename = path.basename(__filename);
 const env = process.env.NODE_ENV || "development";
 const db = {};
 
+let config = {};
+if (!process.env.DATABASE_URL) {
+  config = require(path.join(__dirname, "../config/config.json"))[env];
+}
+
 let sequelize;
 
-// ✅ Gunakan Railway DATABASE_URL jika tersedia (production)
 if (process.env.DATABASE_URL) {
+  // ✅ Railway (Production)
   sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: "postgres",
     protocol: "postgres",
     dialectOptions: {
       ssl: {
         require: true,
-        rejectUnauthorized: false, // penting untuk koneksi SSL Railway
+        rejectUnauthorized: false,
       },
     },
   });
-  console.log("✅ Using DATABASE_URL (Railway)");
+  console.log("✅ Using Railway DATABASE_URL");
 } else {
-  // ✅ Gunakan config.json untuk lokal (Docker / dev)
-  const config = require(path.join(__dirname, "../config/config.json"))[env];
+  // ✅ Lokal (Docker/Dev)
   sequelize = new Sequelize(
     config.database,
     config.username,
@@ -32,7 +36,6 @@ if (process.env.DATABASE_URL) {
   console.log("✅ Using local config/config.json");
 }
 
-// 🔍 Auto-load semua file model di folder ini
 fs.readdirSync(__dirname)
   .filter(
     (file) =>
@@ -44,7 +47,6 @@ fs.readdirSync(__dirname)
     db[model.name] = model;
   });
 
-// 🔗 Hubungkan relasi antar model (jika ada)
 Object.keys(db).forEach((modelName) => {
   if (db[modelName].associate) {
     db[modelName].associate(db);
