@@ -2,7 +2,7 @@
   "name": "kopikukopi-backend",
   "version": "1.0.0",
   "description": "Backend API Coffee Shop",
-  "main": "app.js",
+  "main": "server.js",
   "type": "commonjs",
   "scripts": {
     "dev": "nodemon server.js",
