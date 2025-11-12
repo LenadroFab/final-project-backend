@@ -1,32 +1,22 @@
 // backend/server.js
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const dotenv = require("dotenv");
 const path = require("path");
 const fs = require("fs");
 const bcrypt = require("bcryptjs");
-const sequelize = require("./db");
 
-dotenv.config();
-const app = express();
-const PORT = process.env.PORT || 3001;
+// ✅ Ambil semua model yang sudah diinisialisasi dari ./models/index.js
+const { sequelize, User, Order, OrderItem, Product, Payment } = require("./models");
 
-// Import Models
-const User = require("./models/user");
-const Order = require("./models/order");
-const OrderItem = require("./models/orderItem");
-const Product = require("./models/product");
-const Payment = require("./models/payment");
-
-// Import Relations
-require("./models/relations");
-
-// Import Routes
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const productRoutes = require("./routes/productRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+
+const app = express();
+const PORT = process.env.PORT || 3001;
 
 // ==============================
 // 🔧 MIDDLEWARES
@@ -38,7 +28,6 @@ app.use(express.json());
 const uploadsPath = path.join(__dirname, "uploads");
 app.use("/uploads", express.static(uploadsPath));
 
-// 🔄 Pastikan folder uploads tersedia
 if (!fs.existsSync(uploadsPath)) {
   fs.mkdirSync(uploadsPath);
   console.log("📂 Folder 'uploads' dibuat otomatis");
@@ -48,14 +37,13 @@ if (!fs.existsSync(uploadsPath)) {
 // 🚀 ROUTES
 // ==============================
 app.use("/auth", authRoutes);
-app.use("/users", userRoutes); // ❌ sebelumnya dobel
+app.use("/users", userRoutes);
 app.use("/products", productRoutes);
 app.use("/orders", orderRoutes);
 app.use("/payments", paymentRoutes);
 
-// Root check (tes server)
 app.get("/", (req, res) =>
-  res.json({ message: "☕ KopiKuKopi Backend API berjalan lancar!" })
+  res.json({ message: "☕ KopiKuKopi Backend API berjalan lancar di Railway!" })
 );
 
 // ==============================
@@ -64,12 +52,12 @@ app.get("/", (req, res) =>
 (async () => {
   try {
     await sequelize.authenticate();
-    console.log("✅ Database connected successfully!");
+    console.log("✅ Connected to Railway PostgreSQL");
 
-    // Gunakan alter agar tabel update otomatis tanpa reset data
     await sequelize.sync({ alter: true });
+    console.log("✅ Database synchronized");
 
-    // === Seed akun default jika belum ada ===
+    // === Seed akun default ===
     const seedUser = async (username, password, role) => {
       const exist = await User.findOne({ where: { username } });
       if (!exist) {
@@ -83,14 +71,10 @@ app.get("/", (req, res) =>
     await seedUser("kasir", "kasir123", "kasir");
     await seedUser("customer", "cust123", "customer");
 
-    // Jalankan server
     app.listen(PORT, () => {
-      console.log(`🚀 Server running at http://localhost:${PORT}`);
-      console.log(
-        `📸 Gambar produk disajikan di: http://localhost:${PORT}/uploads`
-      );
+      console.log(`🚀 Server berjalan di PORT ${PORT}`);
     });
   } catch (error) {
-    console.error("❌ Database connection failed:", error.message);
+    console.error("❌ Gagal koneksi ke database Railway:", error.message);
   }
 })();
