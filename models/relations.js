@@ -1,34 +1,63 @@
-function initRelations(db) {
+// backend/models/relations.js
+module.exports = (db) => {
   const { User, Product, Order, OrderItem, Payment } = db;
 
-  console.log("🔍 Loaded models:", Object.keys(db));
-
-  if (User && Order) {
-    User.hasMany(Order, { foreignKey: "user_id", onDelete: "CASCADE" });
-    Order.belongsTo(User, { foreignKey: "user_id", onDelete: "CASCADE" });
+  if (!User || !Order || !Product || !OrderItem || !Payment) {
+    console.warn("⚠️ Some models not loaded yet — skipping relations setup.");
+    return;
   }
 
-  if (Order && OrderItem) {
-    Order.hasMany(OrderItem, { foreignKey: "order_id", onDelete: "CASCADE" });
-    OrderItem.belongsTo(Order, { foreignKey: "order_id", onDelete: "CASCADE" });
-  }
+  /* ====================================================
+     🔗 USER & ORDER
+     ==================================================== */
+  User.hasMany(Order, {
+    foreignKey: "user_id",
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  });
 
-  if (Product && OrderItem) {
-    Product.hasMany(OrderItem, { foreignKey: "product_id", onDelete: "CASCADE" });
-    OrderItem.belongsTo(Product, { foreignKey: "product_id", onDelete: "CASCADE" });
-  }
+  Order.belongsTo(User, {
+    foreignKey: "user_id",
+  });
 
-  if (Order && Payment) {
-    Order.hasOne(Payment, { foreignKey: "order_id", onDelete: "CASCADE" });
-    Payment.belongsTo(Order, { foreignKey: "order_id", onDelete: "CASCADE" });
-  }
+  /* ====================================================
+     🔗 ORDER & ORDER ITEM
+     ==================================================== */
+  Order.hasMany(OrderItem, {
+    foreignKey: "order_id",
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  });
 
-  if (User && Payment) {
-    User.hasMany(Payment, { foreignKey: "user_id", onDelete: "SET NULL" });
-    Payment.belongsTo(User, { foreignKey: "user_id", onDelete: "SET NULL" });
-  }
+  OrderItem.belongsTo(Order, {
+    foreignKey: "order_id",
+  });
+
+  /* ====================================================
+     🔗 PRODUCT & ORDER ITEM
+     ==================================================== */
+  Product.hasMany(OrderItem, {
+    foreignKey: "product_id",
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  });
+
+  OrderItem.belongsTo(Product, {
+    foreignKey: "product_id",
+  });
+
+  /* ====================================================
+     🔗 ORDER & PAYMENT
+     ==================================================== */
+  Order.hasOne(Payment, {
+    foreignKey: "order_id",
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  });
+
+  Payment.belongsTo(Order, {
+    foreignKey: "order_id",
+  });
 
   console.log("🔗 Model relationships initialized successfully!");
-}
-
-module.exports = initRelations;
+};

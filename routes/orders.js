@@ -1,41 +1,47 @@
-const express = require('express');
-const { Order, OrderItem, Menu } = require('../models');
-const router = express.Router();
+// backend/models/order.js
+const { DataTypes } = require("sequelize");
 
-router.post('/', async (req, res) => {
-  const { user_id, items } = req.body;
+module.exports = (sequelize) => {
+  const Order = sequelize.define(
+    "Order",
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+      },
+      table_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      total_amount: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.0,
+      },
+      status: {
+        type: DataTypes.ENUM("pending", "paid", "cancelled"),
+        allowNull: false,
+        defaultValue: "pending",
+      },
+      customer_name: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      customer_email: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      user_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+    },
+    {
+      tableName: "orders",
+      timestamps: true,
+    }
+  );
 
-  const total = items.reduce((sum, x) => sum + (x.qty * x.price), 0);
-  const order = await Order.create({ user_id, total });
-
-  for (let item of items) {
-    await OrderItem.create({
-      order_id: order.id,
-      menu_id: item.menu_id,
-      qty: item.qty,
-      subtotal: item.qty * item.price
-    });
-  }
-
-  res.json({ msg: "Order created", order_id: order.id });
-});
-
-// Tambahkan router GET /all
-router.get('/all', async (req, res) => {
-  try {
-    const orders = await Order.findAll({
-      order: [['id', 'DESC']],
-      include: [
-        {
-          model: OrderItem,
-          include: [Menu] // supaya nama menu ikut tampil
-        }
-      ]
-    });
-    res.json(orders);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-module.exports = router;
+  return Order;
+};
