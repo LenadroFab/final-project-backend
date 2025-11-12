@@ -1,5 +1,7 @@
-// backend/models/Product.js
-module.exports = (sequelize, DataTypes) => {
+// backend/models/product.js
+const { DataTypes } = require("sequelize");
+
+module.exports = (sequelize) => {
   const Product = sequelize.define(
     "Product",
     {
@@ -18,7 +20,11 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: 0.0,
       },
-      image: {
+      description: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      image_url: {
         type: DataTypes.STRING,
         allowNull: true,
       },
@@ -29,10 +35,9 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  // 🔗 asosiasi jika nanti dibutuhkan
+  // 🔗 Relasi (opsional, aktifkan sesuai kebutuhan)
   Product.associate = (models) => {
-    // contoh:
-    // Product.belongsTo(models.User, { foreignKey: "created_by" });
+    // Contoh:
     // Product.hasMany(models.OrderItem, { foreignKey: "product_id" });
   };
 

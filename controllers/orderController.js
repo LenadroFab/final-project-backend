@@ -4,9 +4,6 @@ const OrderItem = require("../models/orderItem");
 const Product = require("../models/product");
 const User = require("../models/user");
 
-// ================================
-// 🔍 GET ALL ORDERS (Admin / Kasir)
-// ================================
 exports.getAllOrders = async (req, res) => {
   try {
     const orders = await Order.findAll({
@@ -26,9 +23,6 @@ exports.getAllOrders = async (req, res) => {
   }
 };
 
-// ================================
-// 👤 GET ORDER BY USER (Customer)
-// ================================
 exports.getMyOrders = async (req, res) => {
   try {
     const orders = await Order.findAll({
@@ -48,9 +42,6 @@ exports.getMyOrders = async (req, res) => {
   }
 };
 
-// ================================
-// ➕ CREATE ORDER
-// ================================
 // backend/controllers/orderController.js
 exports.createOrder = async (req, res) => {
   try {
@@ -97,9 +88,6 @@ exports.createOrder = async (req, res) => {
   }
 };
 
-// ================================
-// ✏️ UPDATE ORDER STATUS
-// ================================
 exports.updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -119,9 +107,6 @@ exports.updateOrderStatus = async (req, res) => {
   }
 };
 
-// ================================
-// 🗑️ DELETE ORDER
-// ================================
 exports.deleteOrder = async (req, res) => {
   try {
     const { id } = req.params;

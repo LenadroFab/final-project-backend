@@ -2,14 +2,11 @@
 const express = require("express");
 const router = express.Router();
 const { verifyToken } = require("../middleware/authMiddleware");
-const Order = require("../models/order");
-const OrderItem = require("../models/orderItem");
-const Product = require("../models/product");
-const User = require("../models/user");
 
-// ================================
-// 🧾 Ambil Semua Order (Admin / Kasir)
-// ================================
+// ✅ Ambil model langsung dari index.js
+const { Order, OrderItem, Product, User } = require("../models");
+
+
 router.get("/", verifyToken, async (req, res) => {
   try {
     const orders = await Order.findAll({
@@ -30,9 +27,6 @@ router.get("/", verifyToken, async (req, res) => {
   }
 });
 
-// ================================
-// 🧍‍♂️ Ambil Order Berdasarkan User Login
-// ================================
 router.get("/my", verifyToken, async (req, res) => {
   try {
     const orders = await Order.findAll({
@@ -51,9 +45,6 @@ router.get("/my", verifyToken, async (req, res) => {
   }
 });
 
-// ================================
-// 🛒 Buat Order Baru
-// ================================
 router.post("/", verifyToken, async (req, res) => {
   try {
     const { items, total } = req.body;
@@ -65,7 +56,7 @@ router.post("/", verifyToken, async (req, res) => {
     // Buat order baru
     const order = await Order.create({
       user_id: req.user.id,
-      total,
+      total_amount: total,
       status: "pending",
     });
 
@@ -75,6 +66,7 @@ router.post("/", verifyToken, async (req, res) => {
       product_id: item.productId,
       qty: item.qty || 1,
       price: item.price,
+      subtotal: item.qty * item.price,
     }));
 
     await OrderItem.bulkCreate(orderItems);
@@ -89,15 +81,14 @@ router.post("/", verifyToken, async (req, res) => {
   }
 });
 
-// ================================
-// ✅ Update Status Order (Admin / Kasir)
-// ================================
 router.put("/:id/status", verifyToken, async (req, res) => {
   try {
     const { status } = req.body;
     const order = await Order.findByPk(req.params.id);
-    if (!order)
+
+    if (!order) {
       return res.status(404).json({ message: "Order tidak ditemukan" });
+    }
 
     order.status = status || "completed";
     await order.save();

@@ -1,13 +1,26 @@
 // backend/routes/paymentRoutes.js
 const express = require("express");
 const router = express.Router();
-const paymentController = require("../controllers/paymentController");
 const { verifyToken } = require("../middleware/authMiddleware");
+const {
+  getAllPayments,
+  createPayment,
+  getMyPayments,
+} = require("../controllers/paymentController");
 
-// Buat pembayaran baru (tidak perlu login)
-router.post("/", paymentController.createPayment);
+// ================================
+// 💳 Ambil Semua Pembayaran
+// ================================
+router.get("/", verifyToken, getAllPayments);
 
-// Lihat daftar pembayaran (admin/kasir tetap butuh login)
-router.get("/", verifyToken, paymentController.getPayments);
+// ================================
+// 💵 Tambah Pembayaran Baru
+// ================================
+router.post("/", verifyToken, createPayment);
+
+// ================================
+// 👤 Ambil Pembayaran User
+// ================================
+router.get("/my", verifyToken, getMyPayments);
 
 module.exports = router;

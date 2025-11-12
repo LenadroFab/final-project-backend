@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const User = require("../models/user");
+const { User } = require("../models"); // ✅ ambil dari index.js
 const bcrypt = require("bcryptjs");
 
 // ============================
@@ -86,16 +86,10 @@ router.delete("/:id", async (req, res) => {
       return res.status(404).json({ message: "User tidak ditemukan" });
     }
 
-    // ✅ Coba hapus manual lewat Sequelize
-    await user.destroy({
-      force: true, // pastikan hard delete
-    });
-
+    await user.destroy({ force: true }); // ✅ Hard delete
     return res.json({ message: "✅ User berhasil dihapus!" });
   } catch (err) {
     console.error("❌ Gagal menghapus user:", err);
-
-    // Tampilkan error asli dari PostgreSQL agar tahu detailnya
     return res.status(500).json({
       message: err.message || "Gagal menghapus user!",
       error: err.parent || err,

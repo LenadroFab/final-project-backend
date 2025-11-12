@@ -1,87 +1,76 @@
-const Payment = require("../models/payment");
-const Order = require("../models/order");
-const OrderItem = require("../models/orderItem");
-const Product = require("../models/product");
-const User = require("../models/user");
+// backend/controllers/paymentController.js
+const { Payment, Order, OrderItem, Product, User } = require("../models");
+const { Op } = require("sequelize");
 
-// ============================================================
-// 🧾 CREATE PAYMENT
-// ============================================================
-exports.createPayment = async (req, res) => {
-  try {
-    const { customerName, totalAmount, method, items } = req.body;
-
-    // Validasi input
-    if (!customerName || !totalAmount || !method || !items?.length) {
-      return res.status(400).json({
-        message: "Nama, total, metode, dan item wajib diisi!",
-      });
-    }
-
-    // 🔍 Cari user berdasarkan nama (atau buat baru)
-    let user = await User.findOne({ where: { username: customerName } });
-    if (!user) {
-      user = await User.create({
-        username: customerName,
-        password: "default123", // default password
-        role: "customer",
-      });
-    }
-
-    // 🧾 Buat order baru
-    const order = await Order.create({
-      user_id: user.id,
-      total: totalAmount,
-      status: "pending",
-    });
-
-    // 💾 Simpan setiap produk ke order_items
-    for (const item of items) {
-      await OrderItem.create({
-        order_id: order.id,
-        product_id: item.productId,
-        quantity: 1,
-        price: item.price,
-      });
-    }
-
-    // 💳 Simpan payment baru
-    const payment = await Payment.create({
-      order_id: order.id,
-      user_id: user.id,
-      amount: totalAmount,
-      method,
-      status: "pending",
-    });
-
-    res.status(201).json({
-      message: "✅ Pembayaran berhasil dibuat!",
-      payment,
-    });
-  } catch (err) {
-    console.error("❌ Gagal membuat pembayaran:", err);
-    res.status(500).json({
-      message: "Gagal membuat pembayaran",
-      error: err.message,
-    });
-  }
-};
-
-// ============================================================
-// 💰 GET ALL PAYMENTS
-// ============================================================
-exports.getPayments = async (req, res) => {
+exports.getAllPayments = async (req, res) => {
   try {
     const payments = await Payment.findAll({
       include: [
-        { model: Order, attributes: ["id", "total", "status"] },
-        { model: User, attributes: ["id", "username"] },
+        {
+          model: Order,
+          include: [
+            { model: OrderItem, include: [Product] },
+            { model: User, attributes: ["id", "username", "role"] },
+          ],
+        },
       ],
       order: [["createdAt", "DESC"]],
     });
     res.json(payments);
   } catch (err) {
-    console.error("❌ Gagal mengambil daftar pembayaran:", err);
-    res.status(500).json({ message: "Gagal mengambil daftar pembayaran" });
+    console.error(err);
+    res.status(500).json({ message: "Gagal memuat data pembayaran" });
+  }
+};
+
+exports.createPayment = async (req, res) => {
+  try {
+    const { order_id, amount, method } = req.body;
+
+    if (!order_id || !amount || !method)
+      return res.status(400).json({ message: "Data pembayaran tidak lengkap" });
+
+    const order = await Order.findByPk(order_id);
+    if (!order)
+      return res.status(404).json({ message: "Order tidak ditemukan" });
+
+    const payment = await Payment.create({
+      order_id,
+      user_id: req.user?.id || null,
+      amount,
+      method,
+      status: "completed",
+    });
+
+    // Update status order setelah pembayaran
+    order.status = "paid";
+    await order.save();
+
+    res.status(201).json({
+      message: "Pembayaran berhasil dibuat",
+      payment,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Gagal membuat pembayaran" });
+  }
+};
+
+
+exports.getMyPayments = async (req, res) => {
+  try {
+    const payments = await Payment.findAll({
+      where: { user_id: req.user.id },
+      include: [
+        {
+          model: Order,
+          include: [{ model: OrderItem, include: [Product] }],
+        },
+      ],
+    });
+    res.json(payments);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Gagal memuat data pembayaran user" });
   }
 };

@@ -1,34 +1,46 @@
-// backend/models/Order.js
+// backend/models/order.js
 const { DataTypes } = require("sequelize");
-const sequelize = require("../db");
-const User = require("./user");
 
-const Order = sequelize.define(
-  "Order",
-  {
-    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    user_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
-    total: {
-      type: DataTypes.DECIMAL(10, 2),
-      allowNull: false,
-      defaultValue: 0.0,
-    },
-    status: {
-      type: DataTypes.ENUM("pending", "paid", "completed", "cancelled"),
-      allowNull: false,
-      defaultValue: "pending",
-    },
-  },
-  {
-    tableName: "orders",
-    timestamps: true,
-  }
-);
+console.log("✅ Loaded Order model v3 (clean, no belongsTo inside)");
 
-// Relasi
-Order.belongsTo(User, { foreignKey: "user_id" });
+module.exports = (sequelize) => {
+  const Order = sequelize.define(
+    "Order",
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+      },
+      user_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      total_amount: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.0,
+      },
+      status: {
+        type: DataTypes.ENUM("pending", "paid", "cancelled"),
+        allowNull: false,
+        defaultValue: "pending",
+      },
+      customer_name: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      customer_email: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+    },
+    {
+      tableName: "orders",
+      timestamps: true,
+    }
+  );
 
-module.exports = Order;
+  // ⚠️ Semua relasi diatur di models/relations.js, bukan di sini.
+  return Order;
+};

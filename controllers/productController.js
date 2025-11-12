@@ -3,9 +3,6 @@ const Product = require("../models/product");
 const path = require("path");
 const fs = require("fs");
 
-// ============================================================
-// 📦 GET all products
-// ============================================================
 exports.getProducts = async (req, res) => {
   try {
     const products = await Product.findAll();
@@ -26,9 +23,6 @@ exports.getProducts = async (req, res) => {
   }
 };
 
-// ============================================================
-// 🆕 CREATE new product
-// ============================================================
 exports.createProduct = async (req, res) => {
   try {
     const { name, price } = req.body;
@@ -62,9 +56,6 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-// ============================================================
-// ✏️ UPDATE product
-// ============================================================
 exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -101,9 +92,6 @@ exports.updateProduct = async (req, res) => {
   }
 };
 
-// ============================================================
-// 🗑️ DELETE product
-// ============================================================
 exports.deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
