@@ -1,5 +1,5 @@
 // backend/controllers/productController.js
-const Product = require("../models/product");
+const { Product } = require("../models");
 const path = require("path");
 const fs = require("fs");
 
@@ -12,7 +12,7 @@ exports.getProducts = async (req, res) => {
       const json = p.toJSON();
       return {
         ...json,
-        image: json.image ? `${host}/uploads/${json.image}` : null,
+        image_url: json.image_url ? `${host}/uploads/${json.image_url}` : null,
       };
     });
 
@@ -32,27 +32,20 @@ exports.createProduct = async (req, res) => {
       return res.status(400).json({ message: "Nama dan harga wajib diisi" });
     }
 
-    const cleanPrice = parseFloat(price);
-
     const newProduct = await Product.create({
       name,
-      price: cleanPrice,
-      image,
+      price: parseFloat(price),
+      image_url: image,
     });
 
-    // 🔥 Tambahkan URL gambar penuh sebelum dikirim ke frontend
     const host = `${req.protocol}://${req.get("host")}`;
-    const result = {
+    res.status(201).json({
       ...newProduct.toJSON(),
-      image: newProduct.image ? `${host}/uploads/${newProduct.image}` : null,
-    };
-
-    res.status(201).json(result);
+      image_url: image ? `${host}/uploads/${image}` : null,
+    });
   } catch (err) {
     console.error("❌ Gagal membuat produk:", err);
-    res
-      .status(500)
-      .json({ message: "Gagal membuat produk", error: err.message });
+    res.status(500).json({ message: "Gagal membuat produk" });
   }
 };
 
@@ -60,32 +53,30 @@ exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, price } = req.body;
-    const product = await Product.findByPk(id);
 
+    const product = await Product.findByPk(id);
     if (!product)
       return res.status(404).json({ message: "Produk tidak ditemukan" });
 
     if (req.file) {
-      if (product.image) {
-        const oldPath = path.join(__dirname, "..", "uploads", product.image);
+      if (product.image_url) {
+        const oldPath = path.join(__dirname, "..", "uploads", product.image_url);
         if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       }
-      product.image = req.file.filename;
+      product.image_url = req.file.filename;
     }
 
     product.name = name || product.name;
     product.price = price ? parseFloat(price) : product.price;
-
     await product.save();
 
-    // Tambahkan URL gambar penuh di response
     const host = `${req.protocol}://${req.get("host")}`;
-    const result = {
+    res.json({
       ...product.toJSON(),
-      image: product.image ? `${host}/uploads/${product.image}` : null,
-    };
-
-    res.json(result);
+      image_url: product.image_url
+        ? `${host}/uploads/${product.image_url}`
+        : null,
+    });
   } catch (err) {
     console.error("❌ Gagal memperbarui produk:", err);
     res.status(500).json({ message: "Gagal memperbarui produk" });
@@ -95,12 +86,13 @@ exports.updateProduct = async (req, res) => {
 exports.deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
+
     const product = await Product.findByPk(id);
     if (!product)
       return res.status(404).json({ message: "Produk tidak ditemukan" });
 
-    if (product.image) {
-      const imagePath = path.join(__dirname, "..", "uploads", product.image);
+    if (product.image_url) {
+      const imagePath = path.join(__dirname, "..", "uploads", product.image_url);
       if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
     }
 

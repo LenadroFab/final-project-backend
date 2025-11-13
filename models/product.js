@@ -1,7 +1,5 @@
 // backend/models/product.js
-const { DataTypes } = require("sequelize");
-
-module.exports = (sequelize) => {
+module.exports = (sequelize, DataTypes) => {
   const Product = sequelize.define(
     "Product",
     {
@@ -34,12 +32,6 @@ module.exports = (sequelize) => {
       timestamps: true,
     }
   );
-
-  // 🔗 Relasi (opsional, aktifkan sesuai kebutuhan)
-  Product.associate = (models) => {
-    // Contoh:
-    // Product.hasMany(models.OrderItem, { foreignKey: "product_id" });
-  };
 
   return Product;
 };
