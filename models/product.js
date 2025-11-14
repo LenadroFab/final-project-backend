@@ -1,5 +1,7 @@
 // backend/models/product.js
-module.exports = (sequelize, DataTypes) => {
+const { DataTypes } = require("sequelize");
+
+module.exports = (sequelize) => {
   const Product = sequelize.define(
     "Product",
     {

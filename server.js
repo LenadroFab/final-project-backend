@@ -2,13 +2,11 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
-const fs = require("fs");
 const bcrypt = require("bcryptjs");
 
-// ✅ Ambil semua model yang sudah diinisialisasi dari ./models/index.js
-const { sequelize, User, Order, OrderItem, Product, Payment } = require("./models");
+const { sequelize, User } = require("./models");
 
+// ROUTES
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const productRoutes = require("./routes/productRoutes");
@@ -18,24 +16,15 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// ==============================
-// 🔧 MIDDLEWARES
-// ==============================
+// ===============================
+// 🚀 FIX PALING PENTING
+// ===============================
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));                // <--- WAJIB ADA
+app.use(express.urlencoded({ extended: true, limit: "50mb" })); // <--- WAJIB ADA
+// ===============================
 
-// 🖼️ Serve folder uploads (gambar produk)
-const uploadsPath = path.join(__dirname, "uploads");
-app.use("/uploads", express.static(uploadsPath));
-
-if (!fs.existsSync(uploadsPath)) {
-  fs.mkdirSync(uploadsPath);
-  console.log("📂 Folder 'uploads' dibuat otomatis");
-}
-
-// ==============================
-// 🚀 ROUTES
-// ==============================
+// ROUTES
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
 app.use("/products", productRoutes);
@@ -43,12 +32,10 @@ app.use("/orders", orderRoutes);
 app.use("/payments", paymentRoutes);
 
 app.get("/", (req, res) =>
-  res.json({ message: "☕ KopiKuKopi Backend API berjalan lancar di Railway!" })
+  res.json({ message: "Backend KopiKuKopi running on Railway" })
 );
 
-// ==============================
-// 🧩 DATABASE SYNC & SERVER START
-// ==============================
+// DATABASE & SERVER START
 (async () => {
   try {
     await sequelize.authenticate();
@@ -57,13 +44,13 @@ app.get("/", (req, res) =>
     await sequelize.sync({ alter: true });
     console.log("✅ Database synchronized");
 
-    // === Seed akun default ===
+    // SEED USER
     const seedUser = async (username, password, role) => {
       const exist = await User.findOne({ where: { username } });
       if (!exist) {
         const hashed = await bcrypt.hash(password, 10);
         await User.create({ username, password: hashed, role });
-        console.log(`👤 Akun ${role} dibuat: ${username}/${password}`);
+        console.log(`👤 User dibuat: ${username}/${password}`);
       }
     };
 
@@ -71,10 +58,10 @@ app.get("/", (req, res) =>
     await seedUser("kasir", "kasir123", "kasir");
     await seedUser("customer", "cust123", "customer");
 
-    app.listen(PORT, () => {
-      console.log(`🚀 Server berjalan di PORT ${PORT}`);
-    });
-  } catch (error) {
-    console.error("❌ Gagal koneksi ke database Railway:", error.message);
+    app.listen(PORT, () =>
+      console.log(`🚀 Server berjalan di PORT ${PORT}`)
+    );
+  } catch (err) {
+    console.error("❌ DB Error:", err.message);
   }
 })();

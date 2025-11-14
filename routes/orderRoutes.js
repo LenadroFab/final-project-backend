@@ -1,103 +1,29 @@
-// backend/routes/orderRoutes.js
 const express = require("express");
 const router = express.Router();
+
+const {
+  getAllOrders,
+  getMyOrders,
+  createOrder,
+  updateOrderStatus,
+  deleteOrder,
+} = require("../controllers/orderController");
+
 const { verifyToken } = require("../middleware/authMiddleware");
 
-// ✅ Ambil model langsung dari index.js
-const { Order, OrderItem, Product, User } = require("../models");
+// Semua pesanan (ADMIN)
+router.get("/", verifyToken, getAllOrders);
 
+// Pesanan milik user yang login
+router.get("/my", verifyToken, getMyOrders);
 
-router.get("/", verifyToken, async (req, res) => {
-  try {
-    const orders = await Order.findAll({
-      include: [
-        { model: User, attributes: ["id", "username", "role"] },
-        {
-          model: OrderItem,
-          include: [{ model: Product, attributes: ["id", "name", "price"] }],
-        },
-      ],
-      order: [["createdAt", "DESC"]],
-    });
+// Buat pesanan
+router.post("/", verifyToken, createOrder);
 
-    res.json(orders);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Gagal memuat data order" });
-  }
-});
+// Update pesanan
+router.put("/:id", verifyToken, updateOrderStatus);
 
-router.get("/my", verifyToken, async (req, res) => {
-  try {
-    const orders = await Order.findAll({
-      where: { user_id: req.user.id },
-      include: [
-        {
-          model: OrderItem,
-          include: [{ model: Product, attributes: ["name", "price"] }],
-        },
-      ],
-    });
-    res.json(orders);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Gagal memuat pesanan user" });
-  }
-});
-
-router.post("/", verifyToken, async (req, res) => {
-  try {
-    const { items, total } = req.body;
-
-    if (!items || items.length === 0) {
-      return res.status(400).json({ message: "Pesanan kosong!" });
-    }
-
-    // Buat order baru
-    const order = await Order.create({
-      user_id: req.user.id,
-      total_amount: total,
-      status: "pending",
-    });
-
-    // Buat order items
-    const orderItems = items.map((item) => ({
-      order_id: order.id,
-      product_id: item.productId,
-      qty: item.qty || 1,
-      price: item.price,
-      subtotal: item.qty * item.price,
-    }));
-
-    await OrderItem.bulkCreate(orderItems);
-
-    res.status(201).json({
-      message: "Pesanan berhasil dibuat",
-      orderId: order.id,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Gagal membuat pesanan" });
-  }
-});
-
-router.put("/:id/status", verifyToken, async (req, res) => {
-  try {
-    const { status } = req.body;
-    const order = await Order.findByPk(req.params.id);
-
-    if (!order) {
-      return res.status(404).json({ message: "Order tidak ditemukan" });
-    }
-
-    order.status = status || "completed";
-    await order.save();
-
-    res.json({ message: "Status pesanan diperbarui", order });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Gagal memperbarui status pesanan" });
-  }
-});
+// Hapus pesanan
+router.delete("/:id", verifyToken, deleteOrder);
 
 module.exports = router;

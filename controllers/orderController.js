@@ -1,8 +1,4 @@
-// backend/controllers/orderController.js
-const Order = require("../models/order");
-const OrderItem = require("../models/orderItem");
-const Product = require("../models/product");
-const User = require("../models/user");
+const { Order, OrderItem, Product, User } = require("../models");
 
 exports.getAllOrders = async (req, res) => {
   try {
@@ -11,14 +7,20 @@ exports.getAllOrders = async (req, res) => {
         { model: User, attributes: ["id", "username", "role"] },
         {
           model: OrderItem,
-          include: [{ model: Product, attributes: ["id", "name", "price"] }],
+          include: [
+            {
+              model: Product,
+              attributes: ["id", "name", "price", "image_url"],
+            },
+          ],
         },
       ],
       order: [["createdAt", "DESC"]],
     });
+
     res.json(orders);
   } catch (err) {
-    console.error("❌ Gagal memuat pesanan:", err);
+    console.error("❌ GET ALL ORDERS ERROR:", err);
     res.status(500).json({ message: "Gagal memuat pesanan" });
   }
 };
@@ -30,61 +32,62 @@ exports.getMyOrders = async (req, res) => {
       include: [
         {
           model: OrderItem,
-          include: [{ model: Product, attributes: ["id", "name", "price"] }],
+          include: [
+            {
+              model: Product,
+              attributes: ["id", "name", "price", "image_url"],
+            },
+          ],
         },
       ],
       order: [["createdAt", "DESC"]],
     });
+
     res.json(orders);
   } catch (err) {
-    console.error("❌ Gagal memuat pesanan user:", err);
+    console.error("❌ GET MY ORDERS ERROR:", err);
     res.status(500).json({ message: "Gagal memuat pesanan user" });
   }
 };
 
-// backend/controllers/orderController.js
 exports.createOrder = async (req, res) => {
   try {
-    const { items, total } = req.body;
-    console.log("🧾 Payload diterima:", { items, total });
-    console.log("👤 User dari token:", req.user);
+    const { items, total, total_amount } = req.body;
+
+    const finalTotal =
+      typeof total_amount !== "undefined" ? total_amount : total;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ message: "Pesanan kosong!" });
     }
-
-    if (!req.user?.id) {
-      return res.status(400).json({ message: "User tidak valid dalam token" });
+    if (!finalTotal || isNaN(Number(finalTotal))) {
+      return res.status(400).json({ message: "Total pesanan tidak valid" });
     }
 
-    // Buat order utama
     const order = await Order.create({
-      user_id: req.user.id,
-      total,
+      user_id: req.user?.id || null,
+      total_amount: finalTotal,
       status: "pending",
     });
-    console.log("✅ Order berhasil dibuat:", order.id);
 
-    // Siapkan order item
     const orderItems = items.map((item) => ({
       order_id: order.id,
       product_id: item.productId,
       qty: item.qty || 1,
       price: item.price,
-      subtotal: (item.price || 0) * (item.qty || 1),
+      subtotal: (Number(item.price) || 0) * (Number(item.qty) || 1),
     }));
 
-    console.log("🛒 Order items:", orderItems);
-
     await OrderItem.bulkCreate(orderItems);
-    console.log("✅ Order items berhasil disimpan");
 
-    res.status(201).json({ message: "Pesanan berhasil dibuat", order });
+    res.status(201).json({
+      message: "Pesanan berhasil dibuat",
+      orderId: order.id,
+      order,
+    });
   } catch (err) {
-    console.error("❌ Gagal membuat pesanan:", err.message);
-    res
-      .status(500)
-      .json({ message: "Gagal membuat pesanan", error: err.message });
+    console.error("❌ CREATE ORDER ERROR:", err);
+    res.status(500).json({ message: "Gagal membuat pesanan" });
   }
 };
 
@@ -102,7 +105,7 @@ exports.updateOrderStatus = async (req, res) => {
 
     res.json({ message: "Status pesanan diperbarui", order });
   } catch (err) {
-    console.error("❌ Gagal memperbarui pesanan:", err);
+    console.error("❌ UPDATE ORDER ERROR:", err);
     res.status(500).json({ message: "Gagal memperbarui pesanan" });
   }
 };
@@ -110,6 +113,7 @@ exports.updateOrderStatus = async (req, res) => {
 exports.deleteOrder = async (req, res) => {
   try {
     const { id } = req.params;
+
     const order = await Order.findByPk(id);
     if (!order)
       return res.status(404).json({ message: "Pesanan tidak ditemukan" });
@@ -119,7 +123,7 @@ exports.deleteOrder = async (req, res) => {
 
     res.json({ message: "Pesanan berhasil dihapus" });
   } catch (err) {
-    console.error("❌ Gagal menghapus pesanan:", err);
+    console.error("❌ DELETE ORDER ERROR:", err);
     res.status(500).json({ message: "Gagal menghapus pesanan" });
   }
 };
