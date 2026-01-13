@@ -2,9 +2,8 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const bcrypt = require("bcryptjs");
 
-const { sequelize, User } = require("./models");
+const { sequelize } = require("./models");
 
 // ROUTES
 const authRoutes = require("./routes/authRoutes");
@@ -17,7 +16,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // =======================================
-// 🔒 CORS CONFIG (FINAL – PRODUCTION READY)
+// 🔒 CORS CONFIG (FINAL – PRODUCTION SAFE)
 // =======================================
 const allowedOrigins = [
   "https://final-project-frontend-coral.vercel.app",
@@ -34,7 +33,7 @@ app.use(
         return callback(null, true);
       }
 
-      return callback(new Error("Not allowed by CORS"));
+      return callback(null, false);
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -42,7 +41,7 @@ app.use(
   })
 );
 
-// 🔥 WAJIB UNTUK PREFLIGHT (OPTIONS)
+// preflight
 app.options("*", cors());
 
 // =======================================
@@ -61,38 +60,26 @@ app.use("/orders", orderRoutes);
 app.use("/payments", paymentRoutes);
 
 app.get("/", (req, res) => {
-  res.json({ message: "Backend KopiKuKopi running on Railway" });
+  res.json({
+    status: "OK",
+    message: "Backend KopiKuKopi running on Railway 🚀",
+  });
 });
 
 // =======================================
-// DATABASE & SERVER START
+// DATABASE & SERVER START (FINAL)
 // =======================================
 (async () => {
   try {
     await sequelize.authenticate();
     console.log("✅ Connected to Railway PostgreSQL");
 
-    await sequelize.sync({ alter: true });
-    console.log("✅ Database synchronized");
-
-    // SEED USERS
-    const seedUser = async (username, password, role) => {
-      const exist = await User.findOne({ where: { username } });
-      if (!exist) {
-        const hashed = await bcrypt.hash(password, 10);
-        await User.create({ username, password: hashed, role });
-        console.log(`👤 User dibuat: ${username}/${password}`);
-      }
-    };
-
-    await seedUser("admin", "admin123", "admin");
-    await seedUser("kasir", "kasir123", "kasir");
-    await seedUser("customer", "cust123", "customer");
-
+    // ❌ JANGAN sync / alter / force di production
     app.listen(PORT, () => {
-      console.log(`🚀 Server berjalan di PORT ${PORT}`);
+      console.log(`🚀 Server running on PORT ${PORT}`);
     });
   } catch (err) {
-    console.error("❌ DB Error:", err.message);
+    console.error("❌ DB Error:", err);
+    process.exit(1);
   }
 })();
