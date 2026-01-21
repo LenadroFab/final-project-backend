@@ -1,34 +1,30 @@
 // backend/models/index.js
 const sequelize = require("../db");
 
-// IMPORT MODEL (SATU-SATU, JELAS)
-const User = require("./User");
-const Product = require("./Product");
-const Order = require("./Order");
-const OrderItem = require("./OrderItem");
-const Payment = require("./Payment");
+// IMPORT MODEL (lowercase sesuai file)
+const User = require("./user");
+const Product = require("./product");
+const Order = require("./order");
+const OrderItem = require("./orderItem");
+const Payment = require("./payment");
 
-// INIT MODEL (SATU KALI)
+// INIT MODEL
 User.initModel(sequelize);
 Product.initModel(sequelize);
 Order.initModel(sequelize);
 OrderItem.initModel(sequelize);
 Payment.initModel(sequelize);
 
-// INIT RELATIONS (SATU KALI)
-User.hasMany(Order);
-Order.belongsTo(User);
+// INIT RELATIONS
+require("./relations")({
+  User,
+  Product,
+  Order,
+  OrderItem,
+  Payment,
+});
 
-Order.hasMany(OrderItem);
-OrderItem.belongsTo(Order);
-
-Product.hasMany(OrderItem);
-OrderItem.belongsTo(Product);
-
-Order.hasOne(Payment);
-Payment.belongsTo(Order);
-
-console.log("🔗 Model relationships initialized successfully!");
+console.log("✅ Models & relations initialized");
 
 module.exports = {
   sequelize,
